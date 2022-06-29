@@ -1,0 +1,35 @@
+name: CI Pipeline
+on: pull_request
+jobs:
+  format_check:
+    name: Terraform Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+      - name: Check Format
+        run: |
+          terraform fmt -check -recursive || \
+          { echo "::error::Some Terraform files are not formatted. Please run 'terraform fmt -recursive' to fix this issue."; exit 1; }
+  tfsec:
+    name: tfsec sarif report
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - name: tfsec
+        uses: aquasecurity/tfsec-sarif-action@v0.1.0
+        with:
+          sarif_file: tfsec.sarif
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: tfsec.sarif
